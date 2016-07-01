@@ -9,6 +9,7 @@
 #~ Python ADAP replacement. This uses Glassfish STOMP for connections
 
 import sys
+import signal
 import logging
 import logging.handlers
 from stompy.simple import Client
@@ -34,8 +35,18 @@ payloadCSV = {'import_type' : 'instructure_csv', 'extension' : 'csv', 'override_
 payloadXML = {'import_type' : 'ims_xml', 'extension' : 'xml', 'override_sis_stickiness' : 'true'}
 
 
+class GracefulKiller():
+	#http://stackoverflow.com/questions/3850261/doing-something-before-program-exit
+	kill_now = False
+	def __init__(self):
+		signal.signal(signal.SIGINT, self.exit_gracefully)
+		signal.signal(signal.SIGTERM, self.exit_gracefully)
 
-			
+	def exit_gracefully(self,signum, frame):
+		self.kill_now = True
+
+
+	
 
 def isMemberRecord(imsxml):
 	#~ Is member record, but not cross list
@@ -84,84 +95,75 @@ def run_stomp():
 	stomp.subscribe('/topic/com_sct_ldi_sis_Sync')
 
 	while True:
+		killer = GracefulKiller()
+		
+			
 		try:
-			
-			try:
-				message = stomp.get()
-				imsrecord = xmltodict.parse(message.body)
-			except Exception, e:
-				logger.error("Stomp/XML: " + str(e))
-				continue
-			
-			#pprint(imsrecord)
-			if isMemberRecord(imsrecord):
-				memberRecord = dict()
-				memberRecord['course_id'] = None
-				memberRecord['section_id'] = imsrecord['enterprise']['membership']['sourcedid']['id']
-				memberRecord['user_id'] = imsrecord['enterprise']['membership']['member']['sourcedid']['id']
-				#~ pprint(imsrecord['enterprise']['membership']['member']['role'])
-				if imsrecord['enterprise']['membership']['member']['role']['@roletype'] == '02':
-					memberRecord[u'role'] = 'teacher'
-				else:
-					memberRecord['role'] = 'student'
-				if imsrecord['enterprise']['membership']['member']['role']['status'] == '1':
-					memberRecord['status'] = 'active'
-				else:
-					memberRecord['status'] = 'deleted'
-				output = StringIO.StringIO()
-				#~ pprint(memberRecord)
-				#~ print memberRecord.keys()
-				#~ writer = csv.DictWriter(output,dialect='excel',fieldnames=['sis_user_id','role','sis_section_id','status'])
-				writer = csv.DictWriter(output,dialect='excel',fieldnames=memberRecord.keys(),lineterminator='\n')
-				writer.writeheader()
-				writer.writerow(memberRecord)
-				
-				#~ r = send_record(message.body)
-				r = send_record(output.getvalue(),payloadCSV)
-				logger.info(output.getvalue())
-				output.close()
-				#~ pprint(imsrecord)
-				logger.info(message.body)
-				try:
-					logger.info(r.text)
-				except:
-					logger.info(r.text)
-					pass
-				#~ sys.exit('Published one')
+			message = stomp.get()
+			imsrecord = xmltodict.parse(message.body)
+		except Exception, e:
+			logger.error("Stomp/XML: " + str(e))
+			continue
+		
+		#pprint(imsrecord)
+		if isMemberRecord(imsrecord):
+			memberRecord = dict()
+			memberRecord['course_id'] = None
+			memberRecord['section_id'] = imsrecord['enterprise']['membership']['sourcedid']['id']
+			memberRecord['user_id'] = imsrecord['enterprise']['membership']['member']['sourcedid']['id']
+			#~ pprint(imsrecord['enterprise']['membership']['member']['role'])
+			if imsrecord['enterprise']['membership']['member']['role']['@roletype'] == '02':
+				memberRecord[u'role'] = 'teacher'
 			else:
-				try:
-					r = send_record(message.body,payloadXML)
-					logger.info(message.body)
-					logger.info(r.text)
-					#~ pprint(imsrecord)
-				except:
-					logger.info("Network Issues")
-					pass
-				
-				
-			#Return
+				memberRecord['role'] = 'student'
+			if imsrecord['enterprise']['membership']['member']['role']['status'] == '1':
+				memberRecord['status'] = 'active'
+			else:
+				memberRecord['status'] = 'deleted'
+			output = StringIO.StringIO()
+			#~ pprint(memberRecord)
+			#~ print memberRecord.keys()
+			#~ writer = csv.DictWriter(output,dialect='excel',fieldnames=['sis_user_id','role','sis_section_id','status'])
+			writer = csv.DictWriter(output,dialect='excel',fieldnames=memberRecord.keys(),lineterminator='\n')
+			writer.writeheader()
+			writer.writerow(memberRecord)
+			
+			#~ r = send_record(message.body)
+			r = send_record(output.getvalue(),payloadCSV)
+			logger.info(output.getvalue())
+			output.close()
+			#~ pprint(imsrecord)
+			logger.info(message.body)
 			try:
-				#~ print r.text
 				logger.info(r.text)
 			except:
-				logger.info("Live feed fail")
+				logger.info(r.text)
+				pass
+		else:
+			try:
+				r = send_record(message.body,payloadXML)
+				logger.info(message.body)
+				logger.info(r.text)
+				#~ pprint(imsrecord)
+			except:
+				logger.error("Network Issues")
+				pass
 			
 			
-					
-			#~ updateGOOGpass(imsperson)
-			#~ cache[imsperson.userid] = imsperson.password
-					
-	
-		except KeyboardInterrupt:
-			print "Shutting Down"
-			logger.info('Keyboard Interupt: Shutting down pyJMSHTML')
-			#~ We do not need to destroy the connection
+		#Return
+		try:
+			#~ print r.text
+			logger.info(r.text)
+		except:
+			logger.error("Live feed fail")
+		
+		if killer.kill_now:
+			logger.info("Shutting Down")
 			stomp.unsubscribe('/topic/com_sct_ldi_sis_Sync')
 			stomp.disconnect()
-			sys.exit(0)
 			return
-		#~ except Exception, e:
-			#~ logger.error("Main Loop Error: " + str(e))
+
+
 
 def initLogging():
 	global logger
