@@ -22,6 +22,9 @@ import json
 import random
 import StringIO
 import csv
+import hashlib
+import os
+from person import Person
 from pyJMSHTML2_config import apikey,stomp_password,stomp_username
 
 
@@ -45,8 +48,32 @@ class GracefulKiller():
 	def exit_gracefully(self,signum, frame):
 		self.kill_now = True
 
+def isPersonRecord(imsxml):
+	if 'person' in imsxml['enterprise']:
+		return True
+	else:
+		return False
+		
+def make_secret(password):
+    """
+    Encodes the given password as a base64 SSHA hash+salt buffer
+    From: https://gist.github.com/rca/7217540
+    """
+    salt = os.urandom(4)
 
-	
+    # hash the password and append the salt
+    sha = hashlib.sha1(password)
+    sha.update(salt)
+
+    # create a base64 encoded string of the concatenated digest + salt
+    digest_salt_b64 = '{}{}'.format(sha.digest(), salt).encode('base64').strip()
+
+    # now tag the digest above with the {SSHA} tag
+    tagged_digest_salt = '{{SSHA}}{}'.format(digest_salt_b64)
+
+    return digest_salt_b64
+
+
 
 def isMemberRecord(imsxml):
 	#~ Is member record, but not cross list
@@ -137,8 +164,39 @@ def run_stomp():
 			try:
 				logger.info(r.text)
 			except:
-				logger.info(r.text)
+				logger.error(r)
 				pass
+		elif isPersonRecord(imsrecord):
+			try:
+				imsperson = Person(imsrecord)
+			except:
+				logger.info('Person Error: %s', sys.exc_info()[0])
+				continue
+			
+			personRecord = dict()
+			personRecord['user_id'] = imsperson.sourcedId
+			personRecord['login_id'] = imsperson.userid
+			personRecord['first_name'] = imsperson.fname
+			personRecord['last_name'] = imsperson.lname
+			personRecord['email'] = imsperson.email
+			personRecord['status'] = 'active'
+			
+			writer = csv.DictWriter(output,dialect='excel',fieldnames=personRecord.keys(),lineterminator='\n')
+			writer.writeheader()
+			writer.writerow(memberRecord)
+			
+			#~ r = send_record(message.body)
+			r = send_record(output.getvalue(),payloadCSV)
+			logger.info(output.getvalue())
+			output.close()
+			#~ pprint(imsrecord)
+			logger.info(message.body)
+			try:
+				logger.info(r.text)
+			except:
+				logger.error(r)
+				pass
+
 		else:
 			try:
 				r = send_record(message.body,payloadXML)
