@@ -147,6 +147,8 @@ def run_stomp():
 				memberRecord['status'] = 'active'
 			else:
 				memberRecord['status'] = 'deleted'
+			
+			output = None
 			output = StringIO.StringIO()
 			#~ pprint(memberRecord)
 			#~ print memberRecord.keys()
@@ -178,12 +180,15 @@ def run_stomp():
 			personRecord['login_id'] = imsperson.userid
 			personRecord['first_name'] = imsperson.fname
 			personRecord['last_name'] = imsperson.lname
+			personRecord['short_name'] = imsperson.sisplayName2
 			personRecord['email'] = imsperson.email
 			personRecord['status'] = 'active'
 			
+			output = None
+			output = StringIO.StringIO()
 			writer = csv.DictWriter(output,dialect='excel',fieldnames=personRecord.keys(),lineterminator='\n')
 			writer.writeheader()
-			writer.writerow(memberRecord)
+			writer.writerow(personRecord)
 			
 			#~ r = send_record(message.body)
 			r = send_record(output.getvalue(),payloadCSV)
@@ -228,7 +233,7 @@ def initLogging():
 	#Initialize logging
 	LOG_FILENAME = 'logs/pyJMSHTML.log'
 	logger = logging.getLogger('pyJMSHTML')
-	logger.setLevel(logging.INFO)
+	logger.setLevel(logging.DEBUG)
 	
 	formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 	#Log file handler
