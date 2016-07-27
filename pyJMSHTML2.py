@@ -188,7 +188,7 @@ def run_stomp():
 			output = StringIO.StringIO()
 			writer = csv.DictWriter(output,dialect='excel',fieldnames=personRecord.keys(),lineterminator='\n')
 			writer.writeheader()
-			writer.writerow(personRecord)
+			writer.writerow({k:v.encode("utf-8") for k,v in personRecord.items()})
 			
 			#~ r = send_record(message.body)
 			r = send_record(output.getvalue(),payloadCSV)
