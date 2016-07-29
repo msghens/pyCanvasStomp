@@ -24,6 +24,7 @@ import StringIO
 import csv
 import hashlib
 import os
+import signal
 from person import Person
 from pyJMSHTML2_config import apikey,stomp_password,stomp_username
 
@@ -37,16 +38,17 @@ headers = {'Authorization' : 'Bearer ' + apikey()}
 payloadCSV = {'import_type' : 'instructure_csv', 'extension' : 'csv', 'override_sis_stickiness' : 'true'}
 payloadXML = {'import_type' : 'ims_xml', 'extension' : 'xml', 'override_sis_stickiness' : 'true'}
 
+#~ http://stackoverflow.com/questions/3850261/doing-something-before-program-exit
+#~ http://bencane.com/2014/04/01/understanding-the-kill-command-and-how-to-terminate-processes-in-linux/
 
-class GracefulKiller():
-	#http://stackoverflow.com/questions/3850261/doing-something-before-program-exit
-	kill_now = False
-	def __init__(self):
-		signal.signal(signal.SIGINT, self.exit_gracefully)
-		signal.signal(signal.SIGTERM, self.exit_gracefully)
-
-	def exit_gracefully(self,signum, frame):
-		self.kill_now = True
+def gracefullstop(signum,frame):
+	'''Close connetions nicely'''
+	logger.info("Closing down nicely")
+	stomp.unsubscribe('/topic/com_sct_ldi_sis_Sync')
+	stomp.disconnect()
+	
+	
+	
 
 def isPersonRecord(imsxml):
 	if 'person' in imsxml['enterprise']:
@@ -111,6 +113,7 @@ def send_record(data,payload = payloadXML):
 def run_stomp():
 	username = stomp_username()
 	password = stomp_password()
+	global stomp
 	#~ Does connection and loops the stomp connection
 	stomp = Client(host='127.0.0.1', port=7672)
 	
@@ -122,9 +125,7 @@ def run_stomp():
 	stomp.subscribe('/topic/com_sct_ldi_sis_Sync')
 
 	while True:
-		killer = GracefulKiller()
-		
-			
+					
 		try:
 			message = stomp.get()
 			imsrecord = xmltodict.parse(message.body)
@@ -219,12 +220,9 @@ def run_stomp():
 			logger.info(r.text)
 		except:
 			logger.error("Live feed fail")
-		
-		if killer.kill_now:
-			logger.info("Shutting Down")
-			stomp.unsubscribe('/topic/com_sct_ldi_sis_Sync')
-			stomp.disconnect()
-			return
+			
+	stomp.unsubscribe('/topic/com_sct_ldi_sis_Sync')
+	stomp.disconnect()	
 
 
 
@@ -256,7 +254,12 @@ def main():
 	initLogging()
 	
 	logger.info('Starting pyJMSHTML')
-	run_stomp()
+	try: 
+		run_stomp()
+	except KeyboardInterrupt:
+		stomp.unsubscribe('/topic/com_sct_ldi_sis_Sync')
+		stomp.disconnect()
+		
 	logger.info('Stopping pyJMSHTML')
 	
 	return 0
