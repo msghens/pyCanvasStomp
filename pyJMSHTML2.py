@@ -122,12 +122,13 @@ def run_stomp():
 	except:
 		sys.exit("Cannot connect to STOMP Server")
 	
-	stomp.subscribe('/topic/com_sct_ldi_sis_Sync')
+	stomp.subscribe('/topic/com_sct_ldi_sis_Sync',ack='auto',conf = {'persistent':'true'})
 
 	while True:
 					
 		try:
-			message = stomp.get()
+			message = stomp.get(block=True)
+			#~ stomp.ack(message)
 			imsrecord = xmltodict.parse(message.body)
 		except Exception, e:
 			logger.error("Stomp/XML: " + str(e))
