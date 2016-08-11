@@ -221,6 +221,9 @@ def run_stomp():
 			logger.info(r.text)
 		except:
 			logger.error("Live feed fail")
+		
+		#~ Slow down the loop
+		time.sleep(0.1)
 			
 	stomp.unsubscribe('/topic/com_sct_ldi_sis_Sync')
 	stomp.disconnect()	
