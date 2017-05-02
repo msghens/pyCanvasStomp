@@ -75,11 +75,23 @@ def make_secret(password):
 
     return digest_salt_b64
 
-def gen_ssha_password(password,salt = os.urandom(8).encode('hex')):
-  final_hashed_pw = "{SSHA}%s" % base64.b64encode(gen_digested_password(password,salt)+salt)
-  # '{SSHA}NjJmOTIzY2RlODEwOWI2MWEzMjRmMDY3N2Q3YzBjYWZkYjllNjQ4MDEyMzU='
-  print 'final_hashed_pw',final_hashed_pw
-  return final_hashed_pw
+"""
+This method generates a SSHA password. This generated password can be included
+in a Canvas users.csv file. If you do this, you would use a column called
+ssha_password rather than simply password
+"""
+def gen_ssha_password(password,salt = os.urandom(10).encode('hex')):
+	final_hashed_pw = "{SSHA}%s" % base64.b64encode(gen_digested_password(password,salt)+salt)
+	# '{SSHA}NjJmOTIzY2RlODEwOWI2MWEzMjRmMDY3N2Q3YzBjYWZkYjllNjQ4MDEyMzU='
+	print 'final_hashed_pw',final_hashed_pw
+	return final_hashed_pw
+
+"""
+This method generates the sha1 hex of the password+salt.
+"""
+def gen_digested_password(pw,salt=os.urandom(10).encode('hex')):
+	return hashlib.sha1('%s%s'%(pw,salt)).hexdigest()
+
 
 
 def isMemberRecord(imsxml):
