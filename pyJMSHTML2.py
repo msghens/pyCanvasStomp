@@ -75,6 +75,11 @@ def make_secret(password):
 
     return digest_salt_b64
 
+def gen_ssha_password(password,salt = os.urandom(8).encode('hex')):
+  final_hashed_pw = "{SSHA}%s" % base64.b64encode(gen_digested_password(password,salt)+salt)
+  # '{SSHA}NjJmOTIzY2RlODEwOWI2MWEzMjRmMDY3N2Q3YzBjYWZkYjllNjQ4MDEyMzU='
+  print 'final_hashed_pw',final_hashed_pw
+  return final_hashed_pw
 
 
 def isMemberRecord(imsxml):
@@ -183,6 +188,7 @@ def run_stomp():
 			personRecord['first_name'] = imsperson.fname
 			personRecord['last_name'] = imsperson.lname
 			personRecord['short_name'] = imsperson.sisplayName2
+			personRecord['ssha_password'] = gen_ssha_password(imsperson.password)
 			personRecord['email'] = imsperson.email
 			personRecord['status'] = 'active'
 			
@@ -221,9 +227,6 @@ def run_stomp():
 			logger.info(r.text)
 		except:
 			logger.error("Live feed fail")
-		
-		#~ Slow down the loop
-		time.sleep(0.1)
 			
 	stomp.unsubscribe('/topic/com_sct_ldi_sis_Sync')
 	stomp.disconnect()	
