@@ -166,6 +166,8 @@ def run_stomp():
 				memberRecord['status'] = 'active'
 			else:
 				memberRecord['status'] = 'deleted'
+				# Bug in banner grade change. creates inactive record. No plans of fixing
+				continue
 			
 			output = None
 			output = StringIO.StringIO()
