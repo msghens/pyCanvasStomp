@@ -6,6 +6,8 @@
 
 import logging
 import xmltodict
+import random
+import string
 
 
 # setting module logger
@@ -98,12 +100,12 @@ class Person(object):
 		raise IndexError('SCTID not found')
 		 
 	def getPasswd(self,imsxml):
-		for passwd in imsxml['enterprise']['person']['userid']:
-			if 'SCTID' in passwd['@useridtype']:
-				return passwd['@password']
+		return ''.join(random.choice(string.ascii_letters + string.digits) for _ in range(15))
+		#Passwords are no longer send through LMS
+		# for passwd in imsxml['enterprise']['person']['userid']:
+			# if 'SCTID' in passwd['@useridtype']:
+				# return passwd['@password']
 		raise IndexError('SCTID not found')		 
 	
 	def getSourcedId(self,imsxml):
 		return imsxml['enterprise']['person']['sourcedid']['id']
-
-

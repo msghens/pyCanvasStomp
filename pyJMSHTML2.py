@@ -83,14 +83,14 @@ ssha_password rather than simply password
 def gen_ssha_password(password,salt = os.urandom(10).encode('hex')):
 	final_hashed_pw = "{SSHA}%s" % base64.b64encode(gen_digested_password(password,salt)+salt)
 	# '{SSHA}NjJmOTIzY2RlODEwOWI2MWEzMjRmMDY3N2Q3YzBjYWZkYjllNjQ4MDEyMzU='
-	print 'final_hashed_pw',final_hashed_pw
+	#print 'final_hashed_pw',final_hashed_pw
 	return final_hashed_pw
 
 """
 This method generates the sha1 hex of the password+salt.
 """
 def gen_digested_password(pw,salt=os.urandom(10).encode('hex')):
-	return hashlib.sha1('%s%s'%(pw,salt)).hexdigest()
+	return hashlib.sha1('%s%s'%(pw.encode('utf-8'),salt)).hexdigest()
 
 
 
