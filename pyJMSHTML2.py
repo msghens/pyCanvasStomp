@@ -97,7 +97,7 @@ def gen_digested_password(pw,salt=os.urandom(10).encode('hex')):
 def isMemberRecord(imsxml):
 	#~ Is member record, but not cross list
 	if 'membership' in imsxml['enterprise'] :
-		if '@roletype' in imsxml['enterprise']['membership']['member']['role']:
+		if 'roletype' in imsxml['enterprise']['membership']['member']['role']:
 			return True
 		else:
 			return False
@@ -158,11 +158,11 @@ def run_stomp():
 			memberRecord['section_id'] = imsrecord['enterprise']['membership']['sourcedid']['id']
 			memberRecord['user_id'] = imsrecord['enterprise']['membership']['member']['sourcedid']['id']
 			#~ pprint(imsrecord['enterprise']['membership']['member']['role'])
-			if imsrecord['enterprise']['membership']['member']['role']['@roletype'] == '02':
+			if imsrecord['enterprise']['membership']['member']['role']['roletype'] == '02':
 				memberRecord[u'role'] = 'teacher'
 			else:
 				memberRecord['role'] = 'student'
-			if imsrecord['enterprise']['membership']['member']['role']['status'] == '1':
+			if imsrecord['enterprise']['membership']['member']['role']['status'] == '01':
 				memberRecord['status'] = 'active'
 			else:
 				memberRecord['status'] = 'deleted'
@@ -257,7 +257,7 @@ def initLogging():
 	formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 	#Log file handler
 	handler = logging.handlers.RotatingFileHandler(
-					LOG_FILENAME, maxBytes=1024*1024, backupCount=10)
+					LOG_FILENAME, maxBytes=4096*1024, backupCount=10)
 
 						
 	#Console gets debug
@@ -287,4 +287,3 @@ def main():
 
 if __name__ == '__main__':
 	main()
-
