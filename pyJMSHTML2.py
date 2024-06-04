@@ -97,7 +97,7 @@ def gen_digested_password(pw,salt=os.urandom(10).encode('hex')):
 def isMemberRecord(imsxml):
 	#~ Is member record, but not cross list
 	if 'membership' in imsxml['enterprise'] :
-		if 'roletype' in imsxml['enterprise']['membership']['member']['role']:
+		if '@roletype' in imsxml['enterprise']['membership']['member']['role']:
 			return True
 		else:
 			return False
@@ -158,7 +158,7 @@ def run_stomp():
 			memberRecord['section_id'] = imsrecord['enterprise']['membership']['sourcedid']['id']
 			memberRecord['user_id'] = imsrecord['enterprise']['membership']['member']['sourcedid']['id']
 			#~ pprint(imsrecord['enterprise']['membership']['member']['role'])
-			if imsrecord['enterprise']['membership']['member']['role']['roletype'] == '02':
+			if imsrecord['enterprise']['membership']['member']['role']['@roletype'] == '02':
 				memberRecord[u'role'] = 'teacher'
 			else:
 				memberRecord['role'] = 'student'
